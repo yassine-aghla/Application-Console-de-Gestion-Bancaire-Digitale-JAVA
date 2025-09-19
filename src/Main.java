@@ -3,6 +3,9 @@ import repositories.InMemoryUserRepository;
 import repositories.UserRepository;
 import models.User;
 import java.util.Scanner;
+import Services.AccountService;
+import repositories.InMemoryAccountRepository;
+import models.Account;
 
 public class Main {
     static Scanner scanner = new Scanner(System.in);
@@ -10,7 +13,7 @@ public class Main {
 
     static UserRepository userRepository = new InMemoryUserRepository();
     static AuthService authService = new AuthService(userRepository);
-
+    static AccountService accountService = new AccountService(new InMemoryAccountRepository());
     public static void main(String[] args) {
         while (true) {
             if (authService.isAuthenticated()) {
@@ -56,14 +59,11 @@ public class Main {
         scanner.nextLine();
 
         switch (choice) {
-            case 1 -> System.out.println(" créer un compte");
-            case 2 -> System.out.println(" lister les comptes");
-            case 3 -> System.out.println(" dépôt");
-            case 4 -> System.out.println(" retrait");
-            case 5 -> System.out.println(" virement");
-            case 6 -> System.out.println(" historique");
-            case 7 -> updateProfile();
-            case 8-> authService.logout();
+            case 1 -> createAccount();
+            case 2 -> listAccounts();
+            case 3 -> closeAccount();
+            case 4 -> updateProfile();
+            case 5 -> authService.logout();
             default -> System.out.println("Choix invalide !");
         }
     }
@@ -128,6 +128,32 @@ public class Main {
             System.out.println("Profil mis à jour avec succès !");
         } else {
             System.out.println("Erreur lors de la mise à jour du profil.");
+        }
+    }
+
+    public static void createAccount() {
+        Account account = accountService.createAccount(authService.getCurrentUser());
+        System.out.println("Compte créé avec succès ! ID: " + account.getAccountId());
+    }
+
+    public static void listAccounts() {
+        var accounts = accountService.getUserAccounts(authService.getCurrentUser());
+        if (accounts.isEmpty()) {
+            System.out.println("Vous n'avez aucun compte.");
+        } else {
+            for (Account acc : accounts) {
+                System.out.println(acc.getAccountId() + " | Solde: " + acc.getBalance() + " | Actif: " + acc.isActive());
+            }
+        }
+    }
+
+    public static void closeAccount() {
+        System.out.print("ID du compte à clôturer: ");
+        String id = scanner.nextLine();
+        if (accountService.closeAccount(authService.getCurrentUser(), id)) {
+            System.out.println("Compte clôturé avec succès.");
+        } else {
+            System.out.println("Impossible de clôturer (soit solde different de 0, soit non propriétaire).");
         }
     }
 }
